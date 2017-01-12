@@ -5,6 +5,12 @@ use strict;
 
 our $VERSION = '0.01';
 
+#require DynaLoader;
+#DynaLoader->bootstrap($VERSION);
+
+require XSLoader;
+XSLoader::load('RPi::ADC::MCP3008', $VERSION);
+
 BEGIN {
 
     my @subs = qw(mode spi);
@@ -44,6 +50,7 @@ sub new {
     my $spi  = defined $args{spi} ? $args{spi} : 0;
     $self->spi($spi);
 
+    fetch();
     return $self;
 }
 
