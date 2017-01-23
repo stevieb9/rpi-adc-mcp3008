@@ -12,51 +12,43 @@
 #include <wiringPi.h>
 #include <wiringPiSPI.h>
 
-static int fd;
+const unsigned char inputs[16] = {
+    0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, // single-ended
+    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07  // differential
+};
 
-void load_spi_driver (){
-    if (system("gpio load spi") == -1){
-        fprintf (stderr, "Can't load the SPI driver: %s\n", strerror (errno)) ;
-        exit (EXIT_FAILURE) ;
+void spi_setup (const int channel){
+    if (wiringPiSPISetup(channel, 1000000) < 0){
+        printf("can't open the SPI bus: %s\n", strerror(errno)) ;
+        exit(errno) ;
     }
 }
 
-void spi_setup (int spi_channel){
-    if ((fd = wiringPiSPISetup(spi_channel, 1000000)) < 0){
-        fprintf (stderr, "Can't open the SPI bus: %s\n", strerror (errno)) ;
-        exit (EXIT_FAILURE) ;
+void wpi_setup () {
+    if (wiringPiSetupGpio() < 0){
+        printf("failed to load wiringPi: %s\n", strerror(errno)) ;
+        exit(errno);
     }
 }
 
-int fetch (int load_spi, int spi, int mode, int input){
+int fetch (const int channel, const int cs, const int input){
 
-    if(load_spi == TRUE){
-        loadSpiDriver();
+    if (input < 0 || input > 15){
+        croak("ADC input channel must be 0-15\n");
     }
 
-    wiringPiSetup () ;
-    spiSetup(spi);
+    unsigned char buf[3];
 
-    if(mode == 1){
-        // single-ended requires 0x08
-        mode = mode << 3;
-    }
+    buf[0] = 1; // start bit
+    buf[1] = inputs[input];
 
-    if(input < 0 || input > 7){
-        return -1;
-    }
+    digitalWrite(cs, LOW); // start conversation
 
-    // start bit
+    wiringPiSPIDataRW(channel, buf, 3);
 
-    unsigned char buffer[3] = {1};
+    digitalWrite(cs, HIGH); // end conversation
 
-    buffer[1] = (mode + input) << 4;
-
-    wiringPiSPIDataRW(spi, buffer, 3);
-
-    // get the last 10 bits
-
-    return ((buffer[1] & 3) << 8) + buffer[2];
+    return ((buf[1] & 3) << 8) + buf[2]; // last 10 bits
 }
 
 MODULE = RPi::ADC::MCP3008  PACKAGE = RPi::ADC::MCP3008
@@ -64,40 +56,14 @@ MODULE = RPi::ADC::MCP3008  PACKAGE = RPi::ADC::MCP3008
 PROTOTYPES: DISABLE
 
 void
-load_spi_driver ()
-        PREINIT:
-        I32* temp;
-        PPCODE:
-        temp = PL_markstack_ptr++;
-        load_spi_driver();
-        if (PL_markstack_ptr != temp) {
-          /* truly void, because dXSARGS not invoked */
-          PL_markstack_ptr = temp;
-          XSRETURN_EMPTY; /* return empty stack */
-        }
-        /* must have used dXSARGS; list context implied */
-        return; /* assume stack size is correct */
+spi_setup (channel)
+    int channel
 
 void
-spi_setup (spi_channel)
-	int	spi_channel
-        PREINIT:
-        I32* temp;
-        PPCODE:
-        temp = PL_markstack_ptr++;
-        spi_setup(spi_channel);
-        if (PL_markstack_ptr != temp) {
-          /* truly void, because dXSARGS not invoked */
-          PL_markstack_ptr = temp;
-          XSRETURN_EMPTY; /* return empty stack */
-        }
-        /* must have used dXSARGS; list context implied */
-        return; /* assume stack size is correct */
+wpi_setup ()
 
 int
-fetch (load_spi, spi, mode, input)
-	int	load_spi
-	int	spi
-	int	mode
-	int	input
-
+fetch (channel, cs, input)
+    int channel
+    int cs
+    int input

@@ -99,14 +99,6 @@ AUTHOR
 
     Steve Bertrand, <steveb at cpan.org>
 
-BUGS
-
-    Please report any bugs or feature requests to bug-rpi-adc-mcp3008 at
-    rt.cpan.org, or through the web interface at
-    http://rt.cpan.org/NoAuth/ReportBug.html?Queue=RPi-ADC-MCP3008. I will
-    be notified, and then you'll automatically be notified of progress on
-    your bug as I make changes.
-
 LICENSE AND COPYRIGHT
 
     Copyright 2017 Steve Bertrand.
