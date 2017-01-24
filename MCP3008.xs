@@ -39,7 +39,7 @@ int fetch (const int channel, const int cs, const int input){
 
     unsigned char buf[3];
 
-    buf[0] = 1; // start bit
+    buf[0] = 0x01; // start bit
     buf[1] = inputs[input];
 
     digitalWrite(cs, LOW); // start conversation
@@ -48,7 +48,7 @@ int fetch (const int channel, const int cs, const int input){
 
     digitalWrite(cs, HIGH); // end conversation
 
-    return ((buf[1] & 3) << 8) + buf[2]; // last 10 bits
+    return ((buf[1] & 0x03) << 8) + buf[2]; // last 10 bits
 }
 
 MODULE = RPi::ADC::MCP3008  PACKAGE = RPi::ADC::MCP3008
