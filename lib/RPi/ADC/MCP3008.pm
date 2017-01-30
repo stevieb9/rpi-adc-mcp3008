@@ -26,7 +26,6 @@ sub new {
 
     pinMode($self->_cs, OUTPUT);
     digitalWrite($self->_cs, HIGH);
-    digitalWrite($self->_cs, LOW);
 
     return $self;
 }

@@ -40,11 +40,12 @@ int fetch (const int channel, const int cs, const int input){
     unsigned char buf[3];
 
     buf[0] = 0x01; // start bit
-    buf[1] = inputs[input];
+    buf[1] = inputs[input] << 4;
+    buf[2] = 0x00;
 
     digitalWrite(cs, LOW); // start conversation
 
-    wiringPiSPIDataRW(channel, buf, 3);
+    wiringPiSPIDataRW(channel, buf, 2);
 
     digitalWrite(cs, HIGH); // end conversation
 
