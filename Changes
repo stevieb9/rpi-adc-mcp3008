@@ -1,4 +1,8 @@
 Revision history for RPi-ADC-MCP3008
 
+2.36.2 UNREL
+        - changed percent return to a 2 digit float from an int, perl the
+          documentation
+
 2.36.1  2017-03-11
         - initial release

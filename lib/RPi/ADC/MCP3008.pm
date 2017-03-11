@@ -3,7 +3,7 @@ package RPi::ADC::MCP3008;
 use warnings;
 use strict;
 
-our $VERSION = '2.36.1';
+our $VERSION = '2.36.2';
 
 require XSLoader;
 XSLoader::load('RPi::ADC::MCP3008', $VERSION);
@@ -38,7 +38,7 @@ sub raw {
 sub percent {
     my ($self, $input) = @_;
     my $ret = fetch($self->_channel, $input);
-    return sprintf("%.0f", ($ret / 1023) * 100);
+    return sprintf("%.2f", ($ret / 1023) * 100);
 }
 sub _channel {
     # spi channel
