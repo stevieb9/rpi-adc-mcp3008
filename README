@@ -14,6 +14,8 @@ DESCRIPTION
     This library should work equally well with the MCP3002 and MCP3004,
     although I have not tested them.
 
+    You can review the MCP3008 datasheet or the breadboard layout.
+
 SYNOPSIS
         use RPi::ADC::MCP3008;
 
