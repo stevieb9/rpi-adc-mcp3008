@@ -86,6 +86,8 @@ the C C<pthread> library.
 This library should work equally well with the MCP3002 and MCP3004, although I
 have not tested them.
 
+You can review the MCP3008 L<datasheet|https://stevieb9.github.io/rpi-adc-mcp3008/datasheet/MCP3008.pdf> or the L<breadboard layout|https://stevieb9.github.io/rpi-adc-mcp3008/breadboard/mcp3008.jpg>.
+
 =head1 SYNOPSIS
 
     use RPi::ADC::MCP3008;
