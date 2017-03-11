@@ -31,10 +31,19 @@ void wpi_setup () {
     }
 }
 
-int fetch (const int channel, const int cs, const int input){
+int fetch (int channel, const int input){
 
     if (input < 0 || input > 15){
         croak("ADC input channel must be 0-15\n");
+    }
+
+    // check if we're using GPIO CS
+
+    char cs = 0;
+
+    if (channel > 1){
+        cs = channel;
+        channel = 0;
     }
 
     unsigned char buf[3];
@@ -42,12 +51,15 @@ int fetch (const int channel, const int cs, const int input){
     buf[0] = 0x01; // start bit
     buf[1] = inputs[input] << 4;
     buf[2] = 0x00;
-
-    digitalWrite(cs, LOW); // start conversation
-
-    wiringPiSPIDataRW(channel, buf, 2);
-
-    digitalWrite(cs, HIGH); // end conversation
+   
+    if (cs){
+        digitalWrite(cs, LOW); // start conversation
+        wiringPiSPIDataRW(channel, buf, 3);
+        digitalWrite(cs, HIGH); // end conversation
+    }
+    else {
+        wiringPiSPIDataRW(channel, buf, 3);
+    }
 
     return ((buf[1] & 0x03) << 8) + buf[2]; // last 10 bits
 }
@@ -64,7 +76,6 @@ void
 wpi_setup ()
 
 int
-fetch (channel, cs, input)
+fetch (channel, input)
     int channel
-    int cs
     int input

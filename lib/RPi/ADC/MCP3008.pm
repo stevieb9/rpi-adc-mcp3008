@@ -12,35 +12,38 @@ use RPi::WiringPi::Constant qw(:all);
 use WiringPi::API qw(:wiringPi);
 
 sub new {
-    my ($class, $channel, $cs) = @_;
+    my ($class, $channel) = @_;
 
     my $self = bless {}, $class;
 
     $self->_channel($channel);
-    $self->_cs($cs);
 
-    spi_setup($self->_channel);
     wpi_setup();
+    spi_setup($self->_channel);
 
-    # init the CS pin per the datasheet
+    # init the CS pin per the datasheet, if
+    # we're in bit-bang mode
 
-    pinMode($self->_cs, OUTPUT);
-    digitalWrite($self->_cs, HIGH);
+    if ($self->_channel > 1){
+        pinMode($self->_channel, OUTPUT);
+        digitalWrite($self->_channel, HIGH);
+    }
 
     return $self;
 }
 sub raw {
     my ($self, $input) = @_;
-    return fetch($self->_channel, $self->_cs, $input);
+    return fetch($self->_channel, $input);
+}
+sub percent {
+    my ($self, $input) = @_;
+    my $ret = fetch($self->_channel, $input);
+    return sprintf("%.0f", ($ret / 1023) * 100);
 }
 sub _channel {
     # spi channel
 
     my ($self, $chan) = @_;
-
-    if (defined $chan && ($chan != 0 && $chan != 1)){
-        die "\$channel param must be 0 or 1\n";
-    }
 
     $self->{channel} = $chan if defined $chan;
 
@@ -50,28 +53,15 @@ sub _channel {
 
     return $self->{channel};
 }
-sub _cs {
-    # chip select GPIO pin
-
-    my ($self, $cs) = @_;
-
-    if (defined $cs && ($cs < 0 || $cs > 63)){
-        die "\$cs param must be a valid GPIO pin number\n";
-    }
-
-    $self->{cs} = $cs if defined $cs;
-
-    if (! defined $self->{cs}){
-        die "\$cs pin has not been set. Send it into new()\n";
-    }
-
-    return $self->{cs};
-}
 sub DESTROY {
     my ($self) = @_;
 
-    digitalWrite($self->_cs, LOW);
-    pinMode($self->_cs, INPUT);
+    # reset the CS pin if we're in bit-bang mode
+
+    if ($self->_channel > 1){
+        digitalWrite($self->_channel, LOW);
+        pinMode($self->_channel, INPUT);
+    }
 }
 sub _vim {};
 
@@ -86,23 +76,32 @@ on Raspberry Pi
 =head1 DESCRIPTION
 
 Provides access to the 10-bit, 8 channel MCP3008 analog to digital converter over
-the SPI bus.
+the SPI bus, on the dedicated hardware SPI channel pins C<CE0> (0) or C<CE1>
+(1), or use any GPIO pin for the CS pin and bit-bang the SPI to keep free the
+hardware SPI CS pins.
 
 Requires L<wiringPi|http://wiringpi.com> to be installed, as well as access to
 the C C<pthread> library.
+
+This library should work equally well with the MCP3002 and MCP3004, although I
+have not tested them.
 
 =head1 SYNOPSIS
 
     use RPi::ADC::MCP3008;
 
-    my $spi_channel = 0;
-    my $cs = 18;
+    # 0 or 1 for channel use the onboard hardware CE0
+    # or CE1 SPI CS pins. Set to any GPIO pin other than
+    # 0 or 1 to use that GPIO pin as your CS instead
 
-    my $adc = RPi::ADC::MCP3008->new($spi_channel, $cs);
+    my $spi_channel = 0; # built-in CE0
+    # $spi_channel = 21; # use GPIO pin 21 as CS instead
 
-    my $adc_input = 0;
+    my $adc = RPi::ADC::MCP3008->new($spi_channel);
 
-    my $r = $adc->raw($adc_input);
+    my $adc_channel = 0;
+
+    my $r = $adc->raw($adc_channel);
 
     ...
 
@@ -118,21 +117,30 @@ Parameters:
     $channel
 
 Mandatory: Integer, the SPI bus channel to communicate over. C<0> for 
-C</dev/spidev0.0> or C<1> for C</dev/spidev0.1>.
-
-    $cs
-
-Mandatory: Integer, the GPIO pin number on the RPi that connects to the C<CS>
-pin on the ADC. This pin is used to start and complete communication with the
-ADC.
+C</dev/spidev0.0> or C<1> for C</dev/spidev0.1>. Alternatively, send in any
+GPIO pin number (above 1), and we'll use that GPIO pin as the CS pin instead,
+freeing up the two hardware SPI channel pins. We do this by bit-banging the
+SPI bus in this case.
 
 =head2 raw
 
-Fetch the raw data from the chosen channel.
+Fetch the raw data from the chosen channel as an integer between C<0> - C<1023>
 
 Parameters:
 
-    $input
+    $adc_channel
+
+Mandatory: Integer, the ADC input channel to read. C<0> - C<7> for
+single-ended (channels CH0-CH7), and between C<8> - C<15> for differential. 
+See L</CHANNEL SELECT> for full details on all the various options.
+
+=head2 percent
+
+Fetch the input level as a double floating point number percentage.
+
+Parameters:
+
+    $adc_channel
 
 Mandatory: Integer, the ADC input channel to read. C<0> - C<7> for
 single-ended (channels CH0-CH7), and between C<8> - C<15> for differential. 
