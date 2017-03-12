@@ -10,3 +10,4 @@ my $adc = RPi::ADC::MCP3008->new(26);
 
 say $adc->raw(0x08);
 say $adc->percent(0x08);
+
