@@ -49,7 +49,7 @@ int fetch (int channel, const int input){
     buf[2] = 0x00;
    
     if (cs){
-        digitalWrite(cs, LOW); // start conversation
+        digitalWrite(cs, LOW);  // start conversation
         wiringPiSPIDataRW(channel, buf, 3);
         digitalWrite(cs, HIGH); // end conversation
     }
