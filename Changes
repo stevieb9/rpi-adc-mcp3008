@@ -1,6 +1,6 @@
 Revision history for RPi-ADC-MCP3008
 
-2.36.4  2017-06-28
+2.3604  2017-06-28
         - added git info to Makefile.PL
         - bumped prereq of WiringPi::API to 2.3612
         - bump prereq of RPi::WiringPi::Constant to 1.00
