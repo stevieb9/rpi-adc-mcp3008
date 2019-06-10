@@ -19,7 +19,7 @@ sub new {
     $self->_channel($channel);
 
     wpi_setup();
-    spi_setup($self->_channel);
+    spi_setup(0); # dummy
 
     # init the CS pin per the datasheet, if
     # we're in bit-bang mode

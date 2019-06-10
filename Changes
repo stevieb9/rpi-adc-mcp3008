@@ -1,6 +1,8 @@
 Revision history for RPi-ADC-MCP3008
 
 2.3605 UNREL
+        - modified what we send in to SPI setup. A recent change in WiringPi
+          broke sending in the GPIO pin as a channel
 
 2.3604  2017-06-28
         - added git info to Makefile.PL
