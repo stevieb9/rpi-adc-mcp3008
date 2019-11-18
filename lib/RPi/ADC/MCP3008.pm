@@ -3,7 +3,7 @@ package RPi::ADC::MCP3008;
 use warnings;
 use strict;
 
-our $VERSION = '2.3605';
+our $VERSION = '2.3606';
 
 require XSLoader;
 XSLoader::load('RPi::ADC::MCP3008', $VERSION);
