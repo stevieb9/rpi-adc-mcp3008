@@ -8,7 +8,7 @@ our $VERSION = '2.3606';
 require XSLoader;
 XSLoader::load('RPi::ADC::MCP3008', $VERSION);
 
-use RPi::WiringPi::Constant qw(:all);
+use RPi::Const qw(:all);
 use WiringPi::API qw(:wiringPi);
 
 sub new {
@@ -18,11 +18,11 @@ sub new {
 
     $self->_channel($channel);
 
-    wpi_setup();
+    wiringPiSetupGpio();
 
     my $spi_channel = $channel > 1 ? 0 : $channel;
 
-    spi_setup($spi_channel);
+    wiringPiSPISetup($spi_channel, 1000000);
 
     # init the CS pin per the datasheet, if
     # we're in bit-bang mode
