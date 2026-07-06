@@ -1,7 +1,10 @@
 Revision history for RPi-ADC-MCP3008
 
 3.1802 UNREL
-    -
+    - Added DEVICE SPECIFICS and ON THE WIRE sections to the POD's TECHNICAL
+      DATA: chip capability summary, wiring map, and the full-duplex 3-byte
+      SPI frame diagrammed byte-by-byte, verified against the MCP3004/3008
+      datasheet (DS21295D)
 
 3.1801    2026-06-12
         - Migrated constants from removed RPi::WiringPi::Constant to
