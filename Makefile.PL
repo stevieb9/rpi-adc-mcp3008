@@ -10,7 +10,6 @@ WriteMakefile(
     ABSTRACT_FROM    => 'lib/RPi/ADC/MCP3008.pm',
     LICENSE          => 'Perl_5',
     PL_FILES         => {},
-    LIBS             => ['-lwiringPi'],
     MIN_PERL_VERSION => 5.006,
     META_MERGE => {
         'meta-spec' => { version => 2 },
@@ -32,8 +31,7 @@ WriteMakefile(
         'Test::More' => 0,
     },
     PREREQ_PM => {
-        'RPi::Const'              => 1.05,
-        'WiringPi::API'           => 3.1803,
+        'RPi::SPI' => 3.1802,
     },
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean => { FILES => 'RPi-ADC-MCP3008-*' },

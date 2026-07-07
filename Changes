@@ -5,6 +5,25 @@ Revision history for RPi-ADC-MCP3008
       DATA: chip capability summary, wiring map, and the full-duplex 3-byte
       SPI frame diagrammed byte-by-byte, verified against the MCP3004/3008
       datasheet (DS21295D)
+    - Removed the XS layer entirely; the module is now pure Perl, with all
+      SPI transport delegated to RPi::SPI
+    - GPIO CS mode (channel above 1) no longer strobes the hardware CE0 pin
+      alongside the chosen GPIO on every transfer, via RPi::SPI 3.1802's
+      per-transaction SPI_NO_CS handling
+    - Added full bit-bang support: pass new() a hashref of RPi::SPI bit-bang
+      params to run the ADC on arbitrary GPIO pins
+    - Object destruction now parks the CS pin deselected (HIGH) and driven,
+      instead of selecting the chip then floating the pin
+    - raw() and percent() now croak on a missing or non-integer ADC input
+      channel
+    - POD: corrected the "bit-bang" description of GPIO CS mode, documented
+      the new true bit-bang mode with datasheet-derived delay guidance
+    - Regenerated README from the current POD
+    - Prereqs: RPi::SPI 3.1802 replaces the direct RPi::Const and
+      WiringPi::API requirements
+    - Added a DATASHEET POD section pointing to the bundled
+      docs/datasheet/MCP3008.pdf; repointed the inline datasheet link off
+      its github.io URL
 
 3.1801    2026-06-12
         - Migrated constants from removed RPi::WiringPi::Constant to

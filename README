@@ -4,27 +4,33 @@ NAME
 
 DESCRIPTION
     Provides access to the 10-bit, 8 channel MCP3008 analog to digital
-    converter over the SPI bus, on the dedicated hardware SPI channel pins
-    `CE0' (0) or `CE1' (1), or use any GPIO pin for the CS pin and bit-bang
-    the SPI to keep free the hardware SPI CS pins.
+    converter over the SPI bus, three ways: the dedicated hardware SPI chip
+    select pins "CE0" (0) or "CE1" (1), any GPIO pin as the chip select
+    (leaving the hardware CE pins free and untouched), or full software
+    bit-bang on arbitrary GPIO pins. All SPI transport is handled by
+    RPi::SPI.
 
-    Requires wiringPi to be installed, as well as access to the C `pthread'
-    library.
+    Requires wiringPi <http://wiringpi.com> version 3.18+ to be installed.
 
     This library should work equally well with the MCP3002 and MCP3004,
     although I have not tested them.
 
-    You can review the MCP3008 datasheet or the breadboard layout.
+    You can review the MCP3008 datasheet
+    <https://stevieb9.github.io/rpi-adc-mcp3008/datasheet/MCP3008.pdf> or
+    the breadboard layout
+    <https://stevieb9.github.io/rpi-adc-mcp3008/breadboard/mcp3008.jpg>.
 
 SYNOPSIS
         use RPi::ADC::MCP3008;
 
         # 0 or 1 for channel use the onboard hardware CE0
-        # or CE1 SPI CS pins. Set to any GPIO pin other than
-        # 0 or 1 to use that GPIO pin as your CS instead
+        # or CE1 SPI CS pins. Set to any GPIO pin above 1
+        # to use that GPIO pin as your CS instead, or send
+        # in a hashref of RPi::SPI bit-bang params to run
+        # the bus entirely in software
 
-        my $spi_channel = 0; # built-in CE0
-        # $spi_channel = 21; # use GPIO pin 21 as CS instead
+        my $spi_channel = 0; # Built-in CE0
+        # $spi_channel = 21; # Use GPIO pin 21 as CS instead
 
         my $adc = RPi::ADC::MCP3008->new($spi_channel);
 
@@ -37,30 +43,51 @@ SYNOPSIS
 METHODS
   new
     Instantiates and returns a new RPi::ADC::MCP3008 object after
-    initializing the SPI bus.
+    initializing the SPI bus, through RPi::SPI.
 
     Parameters:
 
         $channel
 
-    Mandatory: Integer, the SPI bus channel to communicate over. `0' for
-    `/dev/spidev0.0' or `1' for `/dev/spidev0.1'. Alternatively, send in any
-    GPIO pin number (above 1), and we'll use that GPIO pin as the CS pin
-    instead, freeing up the two hardware SPI channel pins. We do this by
-    bit-banging the SPI bus in this case.
+    Mandatory: Integer or hashref.
+
+    Integer 0 for "/dev/spidev0.0" or 1 for "/dev/spidev0.1", using the
+    hardware chip select pins (CE0/CE1). Alternatively, send in any GPIO pin
+    number above 1 (BCM numbering), and that pin becomes the chip select
+    instead, freeing up both hardware CS pins. The transfer still runs on
+    the hardware SPI engine, and the kernel is told to leave CE0/CE1
+    untouched during our transactions, so other devices on the hardware chip
+    selects won't see spurious selects. Both of these modes clock the bus at
+    1MHz.
+
+    Send in a hashref of RPi::SPI bit-bang params instead to run the whole
+    bus in software on arbitrary GPIO pins (BCM numbering):
+
+        my $adc = RPi::ADC::MCP3008->new({
+            clk   => 21, # To CLK on the chip
+            mosi  => 20, # To DIN
+            miso  => 19, # To DOUT
+            cs    => 26, # To CS/SHDN
+            delay => 1,  # Microseconds per clock phase
+        });
+
+    The MCP3008 needs all four lines wired, and RPi::SPI's default SPI mode
+    0 is the correct one. Set "delay" between 1 and 50: at 1 the clock tops
+    out at 500kHz, within the chip's spec at any supply voltage, and past 50
+    you risk breaching the datasheet's requirement that all ten data bits
+    finish within 1.2ms of sampling (accuracy degrades beyond it).
 
   raw
-    Fetch the raw data from the chosen channel as an integer between `0' -
-    `1023'
+    Fetch the raw data from the chosen channel as an integer between 0 -
+    1023
 
     Parameters:
 
         $adc_channel
 
-    Mandatory: Integer, the ADC input channel to read. `0' - `7' for
-    single-ended (channels CH0-CH7), and between `8' - `15' for
-    differential. See CHANNEL SELECT for full details on all the various
-    options.
+    Mandatory: Integer, the ADC input channel to read. 0 - 7 for
+    single-ended (channels CH0-CH7), and between 8 - 15 for differential.
+    See "CHANNEL SELECT" for full details on all the various options.
 
   percent
     Fetch the input level as a double floating point number percentage.
@@ -69,19 +96,38 @@ METHODS
 
         $adc_channel
 
-    Mandatory: Integer, the ADC input channel to read. `0' - `7' for
-    single-ended (channels CH0-CH7), and between `8' - `15' for
-    differential. See CHANNEL SELECT for full details on all the various
-    options.
+    Mandatory: Integer, the ADC input channel to read. 0 - 7 for
+    single-ended (channels CH0-CH7), and between 8 - 15 for differential.
+    See "CHANNEL SELECT" for full details on all the various options.
 
 TECHNICAL DATA
+  DEVICE SPECIFICS
+        - 10-bit successive-approximation ADC with on-chip sample and hold
+        - Eight single-ended inputs, or four pseudo-differential pairs (the
+          MCP3004 is the same interface with four inputs/two pairs)
+        - Ratiometric against VREF: straight binary, code 1023 = VREF
+        - Runs at 2.7-5.5V, so the Pi's 3.3V rail is fine
+        - Max SPI clock 3.6MHz at 5V, 1.35MHz at 2.7V; this module clocks
+          the bus at 1MHz in the hardware modes, within spec at any supply
+          (see L</new> for the bit-bang clock guidance)
+        - SPI modes 0,0 and 1,1; the CS/SHDN pin frames every conversion
+        - 5nA typical standby current, 500uA max active
+
+    Wiring to the Pi: VDD (pin 16) and VREF (pin 15) to 3.3V, AGND (pin 14)
+    and DGND (pin 9) to ground, CLK (pin 13) to SCLK (GPIO 11), DOUT (pin
+    12) to MISO (GPIO 9), DIN (pin 11) to MOSI (GPIO 10), and CS/SHDN (pin
+    10) to CE0 (GPIO 8) or CE1 (GPIO 7) - or to whatever GPIO you handed
+    "new" as the CS. In bit-bang mode, CLK, DOUT and DIN go to your chosen
+    "clk", "miso" and "mosi" pins instead. With VREF fed 3.3V, one LSB works
+    out to ~3.2mV.
+
   CHANNEL SELECT
     The MCP3008 allows both single-ended and differential modes of
     operation. Single-ended means read the difference of voltage between a
     single pin and Gnd. Double-ended means the difference in voltage between
     two input pins. Here's a table explaining the various options, and their
-    parameter value. The left-most bit represents the mode. `1' for
-    single-ended, and `0' for differential:
+    parameter value. The left-most bit represents the mode. 1 for
+    single-ended, and 0 for differential:
 
         Param   Bits    Dec     Hex     ADC Channel
         -------------------------------------------
@@ -104,15 +150,61 @@ TECHNICAL DATA
         14      0110    6       0x06    CH6+ | CH7-
         15      0111    7       0x07    CH6- | CH7+
 
+  ON THE WIRE
+    Every read - "raw" and "percent" both funnel into the same private
+    method - is one full-duplex SPI transaction in mode 0,0: CS drops, three
+    bytes go out on MOSI while three come back on MISO, and CS rises. At the
+    hardware modes' 1MHz clock the 24 data clocks make a frame roughly 24us
+    long. The chip samples the input mid-frame and answers before the frame
+    ends.
+
+    With a hardware CS (new(0) or new(1)), the kernel SPI driver asserts
+    CE0/CE1 around the frame automatically. With a GPIO CS (new(2) and up),
+    RPi::SPI sets the kernel's "SPI_NO_CS" flag, drops the GPIO, runs the
+    same frame on "/dev/spidev0.0", raises the GPIO, then restores the flag
+    - the hardware CE0 pin never moves, so other devices on the hardware
+    chip selects are left alone. In bit-bang mode, the identical frame is
+    clocked out entirely in software on your chosen pins.
+
+    Here are the three bytes reading single-ended channel 0 (raw(0), control
+    nibble 1000 from the "CHANNEL SELECT" table):
+
+               +-----------+-----------+-----------+
+        MOSI   | 0000 0001 | 1000 xxxx | xxxx xxxx |
+               +-----------+-----------+-----------+
+                 Start bit    SGL/DIFF     Filler
+                 (the 1)      D2 D1 D0     clocks
+                              + filler
+
+               +-----------+-----------+-----------+
+        MISO   | ~~~~ ~~~~ | ~~~~ ~0BB | bbbb bbbb |
+               +-----------+-----------+-----------+
+                 High-Z      Null bit    B7..B0
+                             then B9 B8
+
+    The seven leading zeros ahead of the start bit are what byte-align the
+    result: the chip treats the first high DIN bit with CS low as the start
+    bit, reads SGL/DIFF and D2 D1 D0, samples the selected input (the sample
+    window opens on the D0 clock and closes half-way through the next),
+    answers with a low null bit, then shifts out B9..B0 MSB-first on falling
+    clock edges. We keep the bottom two bits of byte 1 and all of byte 2:
+
+        ((byte1 & 0x03) << 8) | byte2
+
+    For example, 1.65V on CH0 with VREF at 3.3V converts to code 512 ("10
+    0000 0000"): byte 1 comes back "xxxx x010", byte 2 all zeros, giving
+    "(0x02 << 8) | 0x00" = 512, which "percent" reports as 512 / 1023 * 100
+    = 50.05%.
+
 AUTHOR
-    Steve Bertrand, `<steveb at cpan.org>'
+    Steve Bertrand, "<steveb at cpan.org>"
 
 LICENSE AND COPYRIGHT
-    Copyright 2017 Steve Bertrand.
+    Copyright 2017-2026 Steve Bertrand.
 
     This program is free software; you can redistribute it and/or modify it
     under the terms of either: the GNU General Public License as published
     by the Free Software Foundation; or the Artistic License.
 
-    See http://dev.perl.org/licenses/ for more information.
+    See <http://dev.perl.org/licenses/> for more information.
 
