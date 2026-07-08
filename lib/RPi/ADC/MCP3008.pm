@@ -82,8 +82,15 @@ GPIO pins. All SPI transport is handled by L<RPi::SPI>.
 
 Requires L<wiringPi|http://wiringpi.com> version 3.18+ to be installed.
 
-This library should work equally well with the MCP3002 and MCP3004, although I
-have not tested them.
+This library also works with the MCP3004, the four-channel device sharing
+this datasheet (DS21295): it uses the same control-word format as the
+MCP3008, and its channel-select bit D2 is a "don't care" (DS21295
+Table 5-1), so the same three-byte frame reads its channels CH0-CH3
+correctly. I have not tested it on hardware.
+
+The MCP3002 is B<not> supported: it is a separate device (DS21294) whose
+control-word format differs from the MCP3004/3008, so this module's frame
+does not address it correctly.
 
 You can review the MCP3008 datasheet, bundled with this distribution as F<docs/datasheet/MCP3008.pdf>, or the L<breadboard layout|https://stevieb9.github.io/rpi-adc-mcp3008/breadboard/mcp3008.jpg>.
 

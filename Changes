@@ -24,6 +24,11 @@ Revision history for RPi-ADC-MCP3008
     - Added a DATASHEET POD section pointing to the bundled
       docs/datasheet/MCP3008.pdf; repointed the inline datasheet link off
       its github.io URL
+    - Corrected the DESCRIPTION compatibility claim: the MCP3004 is
+      supported (same DS21295 control-word format, channel-select bit D2 a
+      "don't care" per Table 5-1), but the MCP3002 is not - it is a separate
+      device (DS21294) with a different control word, so this module's frame
+      does not address it. The old text claimed both worked equally well
 
 3.1801    2026-06-12
         - Migrated constants from removed RPi::WiringPi::Constant to
