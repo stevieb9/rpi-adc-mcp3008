@@ -29,6 +29,9 @@ Revision history for RPi-ADC-MCP3008
       "don't care" per Table 5-1), but the MCP3002 is not - it is a separate
       device (DS21294) with a different control word, so this module's frame
       does not address it. The old text claimed both worked equally well
+    - Added t/06-fetch-decode.t: HW-free coverage of the read path (per-channel
+      SPI frame build, 10-bit sample decode, and percent scaling) by stubbing
+      the _spi seam - no bus, no wiring
 
 3.1801    2026-06-12
         - Migrated constants from removed RPi::WiringPi::Constant to

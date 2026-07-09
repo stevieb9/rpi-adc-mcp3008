@@ -12,6 +12,7 @@ MANIFEST.SKIP
 README
 t/00-load.t
 t/05-input-validation.t
+t/06-fetch-decode.t
 t/manifest.t
 t/pod-coverage.t
 t/pod.t
