@@ -24,12 +24,14 @@ Revision history for RPi-ADC-MCP3008
     - Added a DATASHEET POD section pointing to the bundled
       docs/datasheet/MCP3008.pdf; repointed the inline datasheet link off
       its github.io URL
-    - POD: corrected the DESCRIPTION's device-compatibility claim - the
-      MCP3004 shares the MCP3008 control word (D2 a "don't care") and works
-      unchanged, but the MCP3002 uses a different control word (SGL/DIFF,
-      ODD/SIGN, MSBF) and clocks its result out sooner, so this module's
-      fixed 3-byte frame is not compatible with it; verified against
-      DS21294E and DS21295D
+    - Corrected the DESCRIPTION compatibility claim: the MCP3004 is
+      supported (same DS21295 control-word format, channel-select bit D2 a
+      "don't care" per Table 5-1), but the MCP3002 is not - it is a separate
+      device (DS21294) with a different control word, so this module's frame
+      does not address it. The old text claimed both worked equally well
+    - Added t/06-fetch-decode.t: HW-free coverage of the read path (per-channel
+      SPI frame build, 10-bit sample decode, and percent scaling) by stubbing
+      the _spi seam - no bus, no wiring
 
 3.1801    2026-06-12
         - Migrated constants from removed RPi::WiringPi::Constant to
